@@ -2,7 +2,7 @@
 
 An interactive application for stock market analysis built with Python and Streamlit
 
-**Live App:** [Click here to open the app]()
+**Live App:** [Click here to open the app](https://stock-analyzer-z45hcwnwbx9t6bztjbdzon.streamlit.app/)
 
 ## What it does
 
