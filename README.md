@@ -14,6 +14,8 @@ An interactive application for stock market analysis built with Python and Strea
 - Runs a backtesting engine on the SMA crossover strategy
 - Compares strategy returns against buy-and-hold benchmark
 - Displays all results on an interactive Plotly dashboard
+- Fetches real-time news headlines and scores each one as Positive,Negative, or Neutral using TextBlob NLP sentiment analysis
+
 
 ## Tech Stack
 
@@ -24,7 +26,7 @@ An interactive application for stock market analysis built with Python and Strea
 | yfinance | Live stock data from Yahoo Finance |
 | pandas | Data manipulation and indicator maths |
 | Plotly | Interactive charts |
-
+| TextBlob | NLP sentiment analysis on news headlines |
 ## How to run locally
 
 git clone https://github.com/yasshi7233/stock-analyzer.git
