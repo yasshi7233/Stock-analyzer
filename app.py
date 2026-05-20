@@ -6,6 +6,8 @@ from plotly.subplots import make_subplots
 from  datetime import date,timedelta
 from indicators import add_sma,add_rsi,add_macd
 from backtest import run_backtest,plot_backtest
+from sentiment import get_sentiment, get_sentiment_summary
+
 
 st.set_page_config(
     page_title='Stock Analyzer',
@@ -13,7 +15,7 @@ st.set_page_config(
     page_icon=':chart_with_upwards_trend:'
 )
 st.title('Stock Analyzer Dashboard')
-st.markdown('Fetchlive adta,view technical indicators, and run a backtest- all in one place')
+st.markdown('Fetchlive data,view technical indicators, and run a backtest- all in one place')
 
 st.sidebar.header('Settings')
 
@@ -62,7 +64,53 @@ if run_btn:
             st.stop()
 
     # INDICATOR chart 
-    st.subheader(f'{ticker} Price and Indicators')
+    tab1, tab2 = st.tabs(['Analysis',' News Sentiment'])
+    with tab1:
+      st.subheader(f'{ticker} Price and Indicators')
+    
+    with tab2:
+        st.subheader(f'News Sentiment -{ticker}')
+
+        with st.spinner('Fetching latest news...'):
+            sentiment_df = get_sentiment(ticker)
+        if sentiment_df.empty:
+            st.info('No news data available for sentiment analysis.')
+        else:
+            summary, avg_pol = get_sentiment_summary(sentiment_df)
+
+            if avg_pol > 0.1:
+                st.success(f'Overall Sentiment: {summary}')
+            elif avg_pol < -0.1:
+                st.error(f'Overall Sentiment: {summary}')
+            else:
+                st.warning(f'Overall Sentiment: {summary}')
+            
+            counts = sentiment_df['Sentiment'].value_counts().reset_index()
+            counts.columns = ['Sentiment','Count']
+
+            import plotly.express as px
+            colour_map ={
+                'Positive':'green',
+                'Negative':'red',
+                'Neutral':'gray'
+            }
+            fig_bar = px.bar(
+                counts,
+                x='Sentiment', y='Count',
+                color='Sentiment',
+                color_discrete_map=colour_map,
+                title='Headline Sentiment Breakdown'
+            )
+            st.plotly_chart(fig_bar, use_container_width =True)
+
+            st.subheader('Individual Headlines')
+            for _, row in sentiment_df.iterrows():
+                if row['Sentiment'] == 'Positive':
+                    st.success(f"{row['Headline']}  | Polarity: {row['polarity']} ")
+                elif row['Sentiment'] == 'Negative':
+                    st.error(f"{row['Headline']}  | Polarity: {row['polarity']} ")
+                else:
+                    st.info(f"{row['Headline']}  | polarity: {row['polarity']} ")
 
     rows_needed =1
     if show_rsi:
