@@ -10,7 +10,7 @@ def run_backtest(filepath,initial_cash=100000) :
 
     df['Signal'] =0
     df.loc[df['SMA_20']> df['SMA_50'],'Signal'] =1
-    df['Position'] =df['Signal'].diff()
+    df['Position'] =df['Signal'].diff().fillna(df['Signal'])
 
     cash = initial_cash
     shares = 0
