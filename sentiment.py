@@ -1,61 +1,106 @@
-import yfinance as yf
+import pandas as pd
 from textblob import TextBlob
-import pandas as pd 
+import yfinance as yf
 
-def get_sentiment(ticker):
-    stock = yf.Ticker(ticker)
-    news = stock.news
+# Shared sentiment classification thresholds
+POSITIVE_THRESHOLD = 0.1
+NEGATIVE_THRESHOLD = -0.1
 
-    if not news:
-        return  pd.DataFrame()
-    
+
+def classify_polarity(polarity: float) -> str:
+    """Classifies a polarity score into 'Positive', 'Negative', or 'Neutral'
+
+    using standard shared thresholds.
+    """
+    if polarity > POSITIVE_THRESHOLD:
+        return "Positive"
+    elif polarity < NEGATIVE_THRESHOLD:
+        return "Negative"
+    return "Neutral"
+
+
+def get_sentiment(ticker: str) -> pd.DataFrame:
+    """Fetches latest news headlines for a ticker from Yahoo Finance
+
+    and computes sentiment polarity and subjectivity using TextBlob.
+
+    Returns:
+        DataFrame with columns: Headline, polarity, subjectivity, Sentiment.
+        Returns an empty DataFrame if no news is available or on network/API failure.
+    """
+    if not ticker or not isinstance(ticker, str):
+        return pd.DataFrame()
+
+    try:
+        stock = yf.Ticker(ticker.strip().upper())
+        news = getattr(stock, "news", None)
+    except Exception:
+        # Fallback gracefully on network or unexpected Yahoo Finance issues
+        return pd.DataFrame()
+
+    if not news or not isinstance(news, list):
+        return pd.DataFrame()
+
     results = []
-
     for article in news:
-        content = article.get('content', {})
-        title = content.get('title', '')
-
-        if not title:
+        if not isinstance(article, dict):
             continue
 
-        blob = TextBlob(title)
-        polarity =blob.sentiment.polarity
-        subjectivity = blob.sentiment.subjectivity
+        # Yahoo Finance news structure has evolved across versions:
+        # 1. Old structure: article.get('title')
+        # 2. Newer structure: article.get('content', {}).get('title')
+        title = ""
+        content = article.get("content")
+        if isinstance(content, dict):
+            title = content.get("title", "")
+        if not title:
+            title = article.get("title", "")
 
-        if polarity > 0.1:
-            label = 'Positive'
-        elif polarity < -0.1:
-            label = 'Negative'
-        else:
-            label = 'Neutral'
+        if not isinstance(title, str) or not title.strip():
+            continue
 
-        results.append({
-            'Headline': title,
-            'polarity': round(polarity, 3),
-            'subjectivity': round(subjectivity, 3),
-            'Sentiment': label
-        })
+        clean_title = title.strip()
+        try:
+            blob = TextBlob(clean_title)
+            polarity = blob.sentiment.polarity
+            subjectivity = blob.sentiment.subjectivity
+        except Exception:
+            polarity = 0.0
+            subjectivity = 0.0
+
+        label = classify_polarity(polarity)
+        results.append(
+            {
+                "Headline": clean_title,
+                "polarity": round(float(polarity), 3),
+                "subjectivity": round(float(subjectivity), 3),
+                "Sentiment": label,
+            }
+        )
 
     return pd.DataFrame(results)
 
 
-def get_sentiment_summary(df):
-    if df.empty:
-        return 'No data',0.0
-    
-    avg_polarity = df['polarity'].mean()
+def get_sentiment_summary(df: pd.DataFrame):
+    """Calculates overall sentiment summary string and average polarity.
 
-    if avg_polarity > 0.1:
-        overall_sentiment = 'Positive'
-    elif avg_polarity < -0.1:
-        overall_sentiment = 'Negative'
-    else:      
-        overall_sentiment = 'Neutral'
+    Returns:
+        tuple (summary_text, avg_polarity)
+        Returns ("No data", None) if dataframe is empty.
+    """
+    if df is None or not isinstance(df, pd.DataFrame) or df.empty:
+        return "No data", None
 
-    counts = df['Sentiment'].value_counts()
-    pos = counts.get('Positive', 0)
-    neg = counts.get('Negative', 0)
-    neu = counts.get('Neutral', 0)
+    if "polarity" not in df.columns or "Sentiment" not in df.columns:
+        return "No data", None
 
-    summary =f'{overall_sentiment}  | {pos} positive, {neg} negative, {neu} neutral'
+    avg_polarity = float(df["polarity"].mean())
+    overall_sentiment = classify_polarity(avg_polarity)
+
+    counts = df["Sentiment"].value_counts()
+    pos = int(counts.get("Positive", 0))
+    neg = int(counts.get("Negative", 0))
+    neu = int(counts.get("Neutral", 0))
+
+    summary = f"{overall_sentiment} | {pos} positive, {neg} negative, {neu} neutral"
     return summary, round(avg_polarity, 3)
