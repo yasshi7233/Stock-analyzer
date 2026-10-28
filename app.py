@@ -5,6 +5,7 @@ import plotly.graph_objects as go
 from plotly.subplots import make_subplots
 import streamlit as st
 
+st.sidebar.caption("DEPLOY CHECK: OCT28")
 from backtest import DEFAULT_INITIAL_CAPITAL, plot_backtest, run_backtest
 from fetch import fetch_stock_data
 from indicators import add_macd, add_rsi, add_sma
