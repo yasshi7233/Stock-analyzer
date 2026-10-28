@@ -2,8 +2,6 @@
 
 An interactive web application for stock market technical analysis, SMA crossover backtesting, and real-time news sentiment scoring built with Python and Streamlit.
 
-**Live App:** [Click here to open the app](https://stock-analyzer-z45hcwnwbx9t6bztjbdzon.streamlit.app/)
-
 ---
 
 ## What It Does
@@ -99,7 +97,12 @@ streamlit run app.py
 
 ### 5. Run the automated test suite
 ```bash
-pytest -v
+# Run unit and integration tests with production-only coverage
+pytest
+```
+To run tests with a detailed line-by-line missing coverage report:
+```bash
+pytest --cov-report=term-missing
 ```
 
 ---
@@ -108,29 +111,33 @@ pytest -v
 
 ```text
 Stock-analyzer/
-├── app.py              # Main Streamlit dashboard (tabs, sidebar controls, caching)
-├── backtest.py         # SMA crossover backtest engine and reusable Plotly chart
+├── app.py              # Main Streamlit dashboard (tabs, sidebar controls, session state)
+├── backtest.py         # SMA crossover backtest engine and dual-axis Plotly chart
 ├── fetch.py            # Centralized Yahoo Finance data-fetching layer with currency detection
 ├── indicators.py       # Technical indicator formulas (SMA, Wilder's RSI, MACD)
 ├── sentiment.py        # News sentiment analysis and headline polarity classification
+├── validation.py       # Reusable input sanitization and date range validation logic
 ├── plot_indicators.py  # Standalone CLI script for plotting technical indicators
 ├── run_backtest.py     # Standalone CLI script for executing a quick backtest
-├── requirements.txt    # Pinned core dependencies
+├── requirements.txt    # Compatible dependency version ranges
+├── pytest.ini          # Pytest configuration and production coverage flags
+├── .coveragerc         # Coverage configuration targeting production modules
 ├── .gitignore          # Git exclusions (.venv, *.csv, caches)
 ├── README.md           # Documentation and setup instructions
-├── test_app.py         # Tests for app input cleaning and date validation
-├── test_backtest.py    # Tests for backtesting logic, returns, trade logs, and warm-up
+├── test_app.py         # Tests for app input validation, UI interactions, and persistence
+├── test_backtest.py    # Tests for backtest logic, dual-axis figure, and serialization
+├── test_fetch.py       # Unit tests for market data fetching, fallbacks, and summaries
 ├── test_indicators.py  # Tests for SMA, Wilder's RSI, MACD, and immutability
-└── test_sentiment.py   # Tests for headline parsing, sentiment scoring, and fallbacks
+└── test_sentiment.py   # Tests for headline parsing, sentiment scoring, and boundaries
 ```
 
 ---
 
-## Suggested Screenshots
+## Planned Screenshots
 
-To showcase the application visually in portfolios or documentation, the following genuine UI captures are recommended:
+The project includes layout plans for visual portfolio documentation. Genuine UI captures can be saved to the repository root using the following recommended specifications:
 1. **Technical Analysis Tab (`screenshot_analysis.png`):** The primary view showing the top metric cards (Latest Close with currency, Period High/Low, Avg Volume) and the synchronized multi-pane Plotly chart displaying Price, SMA 20/50, RSI (14) with 30/70 thresholds, and the MACD histogram.
-2. **Backtest Tab (`screenshot_backtest.png`):** The strategy evaluation view displaying the Initial Capital, Final Value, Strategy Return %, Buy-and-Hold Return %, the interactive equity curve with green/red trade markers, and the trade log table.
+2. **Backtest Tab (`screenshot_backtest.png`):** The strategy evaluation view displaying Initial Capital, Final Value, Strategy Return %, Buy-and-Hold Return %, the dual-axis Plotly equity curve with buy/sell trade markers, and the trade log table.
 3. **News Sentiment Tab (`screenshot_sentiment.png`):** The sentiment view displaying overall sentiment summary badges, the headline sentiment distribution bar chart, and individual sentiment cards.
 
 ---

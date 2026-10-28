@@ -99,3 +99,63 @@ class TestBacktest:
         # Ensure correct marker symbols in figure data traces
         symbols = [trace.marker.symbol for trace in fig.data if hasattr(trace, "marker") and trace.marker.symbol]
         assert "triangles-up" not in symbols  # Should be triangle-up, not invalid plural
+
+    def test_plot_backtest_axes_configuration_with_df(self, backtest_sample_df):
+        portfolio_df, trade_df, processed_df, _ = run_backtest(backtest_sample_df)
+        fig = plot_backtest(portfolio_df, trade_df, processed_df)
+
+        trace_names = [trace.name for trace in fig.data]
+        assert "Portfolio Value" in trace_names
+        assert "Stock Price" in trace_names
+        assert "Buy Signal" in trace_names
+
+        # Check trace axis assignments
+        for trace in fig.data:
+            yaxis = getattr(trace, "yaxis", None)
+            if trace.name == "Portfolio Value":
+                assert yaxis in ("y", None)
+            elif trace.name in ("Stock Price", "Buy Signal", "Sell Signal"):
+                assert yaxis == "y2"
+
+        # Check layout defines both primary and secondary yaxes
+        assert hasattr(fig.layout, "yaxis")
+        assert fig.layout.yaxis.title.text == "Portfolio Value"
+        assert hasattr(fig.layout, "yaxis2")
+        assert fig.layout.yaxis2.title.text == "Stock Price"
+        assert fig.layout.yaxis2.overlaying == "y"
+        assert fig.layout.yaxis2.side == "right"
+
+    def test_plot_backtest_axes_configuration_without_df(self, backtest_sample_df):
+        portfolio_df, trade_df, _, _ = run_backtest(backtest_sample_df)
+        fig = plot_backtest(portfolio_df, trade_df, df=None)
+
+        trace_names = [trace.name for trace in fig.data]
+        assert "Portfolio Value" in trace_names
+        assert "Stock Price" not in trace_names
+
+        # When df is None, markers use y and layout does not have dangling yaxis2
+        for trace in fig.data:
+            yaxis = getattr(trace, "yaxis", None)
+            assert yaxis in ("y", None)
+
+        assert hasattr(fig.layout, "yaxis")
+        assert "yaxis2" not in fig.layout
+
+    def test_plot_backtest_serialization(self, backtest_sample_df):
+        import json
+        portfolio_df, trade_df, processed_df, _ = run_backtest(backtest_sample_df)
+        fig = plot_backtest(portfolio_df, trade_df, processed_df)
+
+        # Verify serialization to dictionary
+        fig_dict = fig.to_dict()
+        assert isinstance(fig_dict, dict)
+        assert "data" in fig_dict
+        assert "layout" in fig_dict
+
+        # Verify JSON serialization
+        fig_json = fig.to_json()
+        assert isinstance(fig_json, str)
+        parsed = json.loads(fig_json)
+        assert "data" in parsed
+        assert "layout" in parsed
+        assert "yaxis2" in parsed["layout"]

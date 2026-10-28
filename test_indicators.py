@@ -53,6 +53,11 @@ class TestIndicators:
         with pytest.raises(ValueError, match="Close"):
             add_macd(bad_df)
 
+    def test_non_numeric_close_column_raises_error(self):
+        non_numeric_df = pd.DataFrame({"Close": ["abc", "def", "ghi"]})
+        with pytest.raises(ValueError, match="valid numeric data"):
+            add_sma(non_numeric_df, 2)
+
     def test_invalid_input_types_and_parameters(self, sample_df):
         with pytest.raises(TypeError):
             add_sma("not a dataframe", 20)
@@ -62,6 +67,8 @@ class TestIndicators:
             add_rsi(sample_df, 0)
         with pytest.raises(ValueError):
             add_macd(sample_df, fast=26, slow=12)
+        with pytest.raises(ValueError, match="positive integers"):
+            add_macd(sample_df, fast=0, slow=26, signal=9)
 
     def test_rsi_flat_prices(self):
         # Flat prices (zero gain and zero loss)

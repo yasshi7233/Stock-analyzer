@@ -135,10 +135,25 @@ def plot_backtest(portfolio_df: pd.DataFrame, trade_df: pd.DataFrame, df: pd.Dat
                 y=portfolio_df["Value"],
                 name="Portfolio Value",
                 line=dict(color="#2962FF", width=2),
+                yaxis="y",
+            )
+        )
+
+    has_price_data = df is not None and not df.empty and "Close" in df.columns
+    if has_price_data:
+        fig.add_trace(
+            go.Scatter(
+                x=df.index,
+                y=df["Close"],
+                name="Stock Price",
+                line=dict(color="#90A4AE", width=1.5, dash="dot"),
+                yaxis="y2",
             )
         )
 
     if trade_df is not None and not trade_df.empty:
+        marker_yaxis = "y2" if has_price_data else "y"
+
         buys = trade_df[trade_df["Action"] == "BUY"]
         if not buys.empty:
             fig.add_trace(
@@ -148,7 +163,7 @@ def plot_backtest(portfolio_df: pd.DataFrame, trade_df: pd.DataFrame, df: pd.Dat
                     mode="markers",
                     name="Buy Signal",
                     marker=dict(symbol="triangle-up", size=11, color="#00C853"),
-                    yaxis="y2" if df is not None else "y",
+                    yaxis=marker_yaxis,
                 )
             )
 
@@ -161,17 +176,29 @@ def plot_backtest(portfolio_df: pd.DataFrame, trade_df: pd.DataFrame, df: pd.Dat
                     mode="markers",
                     name="Sell Signal",
                     marker=dict(symbol="triangle-down", size=11, color="#D50000"),
-                    yaxis="y2" if df is not None else "y",
+                    yaxis=marker_yaxis,
                 )
             )
 
-    fig.update_layout(
+    has_secondary_axis = any(getattr(trace, "yaxis", None) == "y2" for trace in fig.data)
+
+    layout_kwargs = dict(
         title="Backtest: Portfolio Value and Trade Signals",
         xaxis_title="Date",
-        yaxis_title="Portfolio Value",
+        yaxis=dict(title="Portfolio Value"),
         height=450,
         hovermode="x unified",
         legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1),
         margin=dict(l=40, r=40, t=50, b=40),
     )
+
+    if has_secondary_axis:
+        layout_kwargs["yaxis2"] = dict(
+            title="Stock Price",
+            overlaying="y",
+            side="right",
+            showgrid=False,
+        )
+
+    fig.update_layout(**layout_kwargs)
     return fig
